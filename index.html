@@ -4,43 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>STUDYSMART - Exam Planner & Revision Guide</title>
-    <!-- Tailwind CSS for styling -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Babel for parsing JSX in the browser -->
+    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans">
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState } = React;
 
-        // Simple Lucide icon wrapper components for browser CDN use
-        const IconWrapper = ({ name, className = "w-4 h-4" }) => {
-            useEffect(() => {
-                lucide.createIcons();
-            }, []);
-            return <i data-lucide={name} className={className}></i>;
-        };
-
-        const App = () => {
+        function App() {
             const [exams, setExams] = useState([
                 {
                     id: '1',
                     subject: 'Mathematics',
-                    examName: 'Mid-Term Algebra & Calculus Exam',
+                    examName: 'Mid-Term Algebra Exam',
                     date: '2026-06-15',
                     time: '09:00 AM',
-                    syllabus: 'Quadratic Equations, Polynomials, Limits, Derivatives',
+                    syllabus: 'Quadratic Equations, Polynomials, Limits',
                     revisionPlan: [
                         { dayNumber: 1, date: '2026-06-08', topic: 'Quadratic Equations basics', done: true },
-                        { dayNumber: 2, date: '2026-06-09', topic: 'Polynomial factorization & roots', done: false },
-                        { dayNumber: 3, date: '2026-06-10', topic: 'Introduction to Limits', done: false }
+                        { dayNumber: 2, date: '2026-06-09', topic: 'Polynomial factorization', done: false }
                     ]
                 }
             ]);
@@ -55,40 +44,24 @@
             });
             const [examTime, setExamTime] = useState('09:00 AM');
             const [syllabus, setSyllabus] = useState('');
-            
-            const profile = {
-                targetGrade: 'A+',
-                subjects: [
-                    { id: '1', name: 'Mathematics' },
-                    { id: '2', name: 'Physics' },
-                    { id: '3', name: 'Chemistry' },
-                    { id: '4', name: 'Computer Science' }
-                ]
-            };
 
-            useEffect(() => {
-                lucide.createIcons();
-            }, [exams, showAddModal]);
-
-            const getTodayDateString = () => new Date().toISOString().split('T')[0];
-            const todayStr = getTodayDateString();
+            const subjectsList = ['Mathematics', 'Physics', 'Chemistry', 'Computer Science'];
 
             const getDaysLeft = (targetDateStr) => {
                 const target = new Date(targetDateStr).getTime();
-                const today = new Date(todayStr).getTime();
+                const today = new Date().getTime();
                 return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
             };
 
             const toggleRevisionDayDone = (examId, dayNumber) => {
                 setExams(exams.map(exam => {
                     if (exam.id !== examId) return exam;
-                    const updatedPlan = exam.revisionPlan.map(day => {
-                        if (day.dayNumber === dayNumber) {
-                            return { ...day, done: !day.done };
-                        }
-                        return day;
-                    });
-                    return { ...exam, revisionPlan: updatedPlan };
+                    return {
+                        ...exam,
+                        revisionPlan: exam.revisionPlan.map(day => 
+                            day.dayNumber === dayNumber ? { ...day, done: !day.done } : day
+                        )
+                    };
                 }));
             };
 
@@ -100,42 +73,37 @@
                 e.preventDefault();
                 if (!examName.trim()) return;
 
-                const daysCount = Math.max(1, getDaysLeft(examDate));
                 const rawTopics = syllabus.split(/[\n,;]+/).map(t => t.trim()).filter(Boolean);
                 const defaultTopics = rawTopics.length > 0 ? rawTopics : [
-                    'Fundamental Concepts & Definitions',
-                    'Key Formulas & Theorem proofs',
-                    'Worked Examples & Problem Sets',
-                    'Difficult Topics & Doubts Clarification',
-                    'Previous Year Question Papers',
-                    'Timed Mock Exam & Revision Notes'
+                    'Fundamental Concepts',
+                    'Key Formulas & Proofs',
+                    'Problem Sets',
+                    'Doubts Clarification',
+                    'Previous Year Papers',
+                    'Mock Exam'
                 ];
 
-                const generatedPlan = [];
-                const stepCount = Math.min(daysCount, Math.max(defaultTopics.length, 3));
-
-                for (let i = 0; i < stepCount; i++) {
+                const generatedPlan = defaultTopics.map((topic, i) => {
                     const revDate = new Date();
                     revDate.setDate(revDate.getDate() + i + 1);
-                    generatedPlan.push({
+                    return {
                         dayNumber: i + 1,
                         date: revDate.toISOString().split('T')[0],
-                        topic: defaultTopics[i % defaultTopics.length],
+                        topic,
                         done: false
-                    });
-                }
+                    };
+                });
 
-                const newExamItem = {
+                setExams([{
                     id: Date.now().toString(),
                     subject,
                     examName: examName.trim(),
                     date: examDate,
                     time: examTime,
-                    syllabus: syllabus.trim() || 'Comprehensive course syllabus',
+                    syllabus: syllabus.trim() || 'General Course Syllabus',
                     revisionPlan: generatedPlan
-                };
+                }, ...exams]);
 
-                setExams([newExamItem, ...exams]);
                 setExamName('');
                 setSyllabus('');
                 setShowAddModal(false);
@@ -143,41 +111,34 @@
 
             return (
                 <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6 pb-12">
-                    {/* Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4 border-slate-200">
                         <div>
                             <div className="flex items-center gap-2">
-                                <span className="text-amber-500 font-bold text-xl">🏆</span>
-                                <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">
+                                <span className="text-2xl">🏆</span>
+                                <h1 className="text-2xl sm:text-3xl font-black text-slate-800">
                                     Exam Planner &amp; Revision Guide
                                 </h1>
                             </div>
                             <p className="text-xs sm:text-sm text-slate-500 font-semibold mt-1">
-                                Exam countdowns &bull; Auto-generated day-by-day revision schedule &bull; Target score: {profile.targetGrade}
+                                Day-by-day revision schedule &bull; STUDYSMART
                             </p>
                         </div>
 
                         <button
                             onClick={() => setShowAddModal(true)}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#694aaf] hover:bg-[#553b92] text-white text-xs sm:text-sm font-bold shadow-md transition active:scale-95 self-start sm:self-auto"
+                            className="px-4 py-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs sm:text-sm font-bold shadow transition"
                         >
-                            <i data-lucide="plus" className="w-4 h-4"></i>
-                            <span>Add Exam &amp; Plan</span>
+                            + Add Exam &amp; Plan
                         </button>
                     </div>
 
-                    {/* Exam Cards */}
                     <div className="space-y-6">
                         {exams.length === 0 ? (
                             <div className="bg-white rounded-3xl p-10 text-center border border-purple-100 shadow-sm">
-                                <div className="text-amber-400 text-4xl mb-3">🏆</div>
-                                <h3 className="font-bold text-slate-700 text-base">No upcoming exams added</h3>
-                                <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                                    Add your upcoming exams and STUDYSMART will automatically generate a tailored day-by-day revision roadmap for you!
-                                </p>
+                                <p className="font-bold text-slate-700">No upcoming exams added</p>
                                 <button
                                     onClick={() => setShowAddModal(true)}
-                                    className="mt-4 px-4 py-2 rounded-xl bg-purple-100 text-purple-900 font-bold text-xs hover:bg-purple-200 transition"
+                                    className="mt-4 px-4 py-2 rounded-xl bg-purple-100 text-purple-900 font-bold text-xs"
                                 >
                                     Add First Exam
                                 </button>
@@ -192,135 +153,11 @@
                                 return (
                                     <div key={exam.id} className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-purple-100 space-y-4">
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-purple-100">
-                                            <div className="flex items-start sm:items-center gap-3">
-                                                <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0">
-                                                    🏆
-                                                </div>
-                                                <div>
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <span className="text-xs font-bold bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-md">
-                                                            {exam.subject}
-                                                        </span>
-                                                        <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
-                                                            📅 <span>{exam.date} ({exam.time})</span>
-                                                        </span>
-                                                    </div>
-                                                    <h3 className="text-lg sm:text-xl font-black text-slate-800 mt-1">
-                                                        {exam.examName}
-                                                    </h3>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center gap-3 self-end sm:self-center">
-                                                <div className={`px-3.5 py-1.5 rounded-2xl text-xs sm:text-sm font-black shadow-xs flex items-center gap-1.5 ${
-                                                    daysLeft <= 2 ? 'bg-rose-500 text-white animate-pulse' :
-                                                    daysLeft <= 7 ? 'bg-amber-100 text-amber-800 border border-amber-200' :
-                                                    'bg-purple-100 text-purple-900 border border-purple-200'
-                                                }`}>
-                                                    ⏱️
-                                                    <span>
-                                                        {daysLeft < 0 ? 'Completed' :
-                                                         daysLeft === 0 ? 'Today! 🎯' :
-                                                         daysLeft === 1 ? 'Tomorrow! 🔥' :
-                                                         ${daysLeft} Days Left}
-                                                    </span>
-                                                </div>
-
-                                                <button
-                                                    onClick={() => deleteExam(exam.id)}
-                                                    className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition"
-                                                    title="Delete Exam"
-                                                >
-                                                    🗑️
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {exam.syllabus && (
-                                            <div className="bg-purple-50/50 p-3.5 rounded-2xl border border-purple-100/60 text-xs">
-                                                <span className="font-extrabold text-purple-900 block mb-0.5">Syllabus Topics:</span>
-                                                <p className="text-slate-600 font-medium">{exam.syllabus}</p>
-                                            </div>
-                                        )}
-
-                                        <div className="space-y-1.5">
-                                            <div className="flex items-center justify-between text-xs font-bold">
-                                                <span className="text-slate-700 flex items-center gap-1.5">
-                                                    ✅ <span>Revision Checklist Progress</span>
+                                            <div>
+                                                <span className="text-xs font-bold bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-md">
+                                                    {exam.subject}
                                                 </span>
-                                                <span className="text-purple-700">
-                                                    {completedCount} of {totalPlan} milestones completed ({progress}%)
-                                                </span>
-                                            </div>
-                                            <div className="w-full h-2.5 bg-purple-100 rounded-full overflow-hidden">
-                                                <div
-                                                    style={{ width: ${progress}% }}
-                                                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-500"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <h4 className="text-xs font-black uppercase tracking-wider text-purple-900 mb-2.5 flex items-center gap-1.5">
-                                                ✨ <span>Day-by-Day Revision Plan</span>
-                                            </h4>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                                                {exam.revisionPlan.map((day) => (
-                                                    <div
-                                                        key={day.dayNumber}
-                                                        onClick={() => toggleRevisionDayDone(exam.id, day.dayNumber)}
-                                                        className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                                                            day.done ? 'bg-emerald-50/40 border-emerald-200' : 'bg-white hover:bg-purple-50/40 border-slate-200'
-                                                        }`}
-                                                    >
-                                                        <div className="flex items-center gap-3">
-                                                            <button
-                                                                type="button"
-                                                                className="flex-shrink-0 flex items-center justify-center"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    toggleRevisionDayDone(exam.id, day.dayNumber);
-                                                                }}
-                                                            >
-                                                                {day.done ? (
-                                                                    <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">✓</div>
-                                                                ) : (
-                                                                    <div className="w-5 h-5 rounded-full border-2 border-purple-300 bg-white hover:border-purple-700 transition" />
-                                                                )}
-                                                            </button>
-                                                            <div>
-                                                                <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-purple-700">
-                                                                    <span>Day {day.dayNumber}</span>
-                                                                    <span className="text-slate-300">&bull;</span>
-                                                                    <span className="text-slate-500 font-semibold">{day.date}</span>
-                                                                </div>
-                                                                <p className={text-xs font-bold mt-0.5 ${day.done ? 'line-through text-slate-400' : 'text-slate-800'}}>
-                                                                    {day.topic}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-
-                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                                            day.done ? 'bg-emerald-100 text-emerald-700' : 'bg-purple-100 text-purple-800'
-                                                        }`}>
-                                                            {day.done ? 'Done' : 'Pending'}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })
-                        )}
-                    </div>
-
-                    {/* Add Exam Modal */}
-                    {showAddModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-                            <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-xl border border-purple-100">
-                                <div className="flex items-center justify-between pb-3 border-b border-purple-100">
-                                    <h3 className="text-lg font-black text-slate-800">Add Upcoming Exam</h3>
-                                    <button
-                                        onClick={() => setShowAddModal(fals
+                                                <h3 className="text-lg sm:text-xl font-black text-slate-800 mt-1">
+                                                    {exam.examName}
+                                                </h3>
+                                                <p className="text-xs text-slate-500 font-semibold mt-0.5
